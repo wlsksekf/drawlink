@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  nginx:
+    container_name: drawlink-nginx
+    image: nginx:1.23-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./certbot-data/conf:/etc/letsencrypt
+      - ./certbot-data/www:/var/www/certbot
+    depends_on:
+      - frontend
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+
+  backend:
+    image: ${DOCKER_USERNAME:-drawlink}/${BACKEND_IMAGE:-backend}:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: drawlink-backend
+    restart: always
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - PORT=8000
+    expose:
+      - "8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+
+  frontend:
+    image: ${DOCKER_USERNAME:-drawlink}/${FRONTEND_IMAGE:-frontend}:latest
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    container_name: drawlink-frontend
+    restart: always
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
