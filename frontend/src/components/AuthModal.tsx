@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabase';
-import { Sparkles, Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
+import { Sparkles, Mail, Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
 
 interface AuthModalProps {
   onClose: () => void;

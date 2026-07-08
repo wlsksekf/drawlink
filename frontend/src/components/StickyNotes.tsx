@@ -31,12 +31,10 @@ const NOTE_COLORS = [
 ];
 
 export const StickyNotes: React.FC<StickyNotesProps> = ({
-  boardId,
   userId,
   ws,
   notes,
-  setNotes,
-  tool
+  setNotes
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);

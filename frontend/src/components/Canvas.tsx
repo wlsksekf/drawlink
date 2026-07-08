@@ -114,9 +114,6 @@ export const Canvas: React.FC<CanvasProps> = ({
   // Chalk Brush cache
   const brushCacheRef = useRef<Record<string, HTMLCanvasElement>>({});
 
-  // Background color constant of our whiteboard grid (used for backward compatibility)
-  const BG_COLOR = '#163020';
-
   // Panning drag states (isGrabbing updates cursors, isPanningRef tracks panning synchronously)
   const [isGrabbing, setIsGrabbing] = React.useState(false);
   const isPanningRef = useRef(false);

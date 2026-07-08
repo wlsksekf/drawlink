@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { LogOut, RefreshCw, Layers, Copy, Check, MousePointer2, PenTool, Eraser, PlusCircle, Trash2, Users } from 'lucide-react';
+import { LogOut, RefreshCw, Layers, MousePointer2, PenTool, Eraser, PlusCircle, Trash2, Users } from 'lucide-react';
 import { supabase } from './supabase';
 import { Canvas } from './components/Canvas';
 import { StickyNotes } from './components/StickyNotes';
