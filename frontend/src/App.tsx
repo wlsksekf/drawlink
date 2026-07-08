@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { LogOut, RefreshCw, Layers, Sparkles, Copy, Check, MousePointer2, PenTool, Eraser, PlusCircle, Trash2 } from 'lucide-react';
+import { LogOut, RefreshCw, Layers, Copy, Check, MousePointer2, PenTool, Eraser, PlusCircle, Trash2 } from 'lucide-react';
 import { supabase } from './supabase';
 import { Canvas } from './components/Canvas';
 import { StickyNotes } from './components/StickyNotes';
+import { AuthModal } from './components/AuthModal';
 
 interface UserSession {
   id: string;
@@ -38,11 +39,6 @@ const defaultGuest = (): UserSession => ({
 export default function App() {
   // Session states - starts as guest automatically
   const [session, setSession] = useState<UserSession>(defaultGuest());
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // App workspace states
@@ -218,28 +214,6 @@ export default function App() {
     fetchStickies();
     setPanOffset({ x: -1000, y: -1000 }); // reset pan position to center on board switch
   }, [boardId, clearTrigger]);
-
-  // Auth Submit Actions
-  const handleAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setIsLoading(true);
-
-    try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        alert('Verification email sent!');
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
-    } catch (err: any) {
-      setAuthError(err.message || 'Authentication failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -613,82 +587,9 @@ export default function App() {
         )}
       </div>
 
-      {/* Floating Auth Modal Panel */}
+      {/* Auth Modal */}
       {isAuthModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsAuthModalOpen(false)}>
-          <div className="glass-panel auth-card" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
-            {/* Close Button X */}
-            <button
-              onClick={() => setIsAuthModalOpen(false)}
-              style={{
-                position: 'absolute',
-                top: '12px',
-                right: '16px',
-                background: 'none',
-                border: 'none',
-                color: '#94a3b8',
-                cursor: 'pointer',
-                fontSize: '1.5rem',
-                fontWeight: 300,
-                lineHeight: 1
-              }}
-            >
-              &times;
-            </button>
-
-            <div className="flex flex-col items-center gap-1 text-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div className="flex-center animate-blink" style={{ background: 'rgba(59, 130, 246, 0.12)', padding: '0.75rem', borderRadius: '50%', marginBottom: '0.5rem', boxShadow: '0 0 16px rgba(59,130,246,0.2)', animationDuration: '4s' }}>
-                <Sparkles className="w-8 h-8 text-blue-500" style={{ color: '#3b82f6' }} />
-              </div>
-              <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.5rem', fontWeight: 600, letterSpacing: '-0.025em' }}>Save Your Board</h2>
-              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem', padding: '0 1rem' }}>
-                Sign in or create an account to save drawings and sticky notes permanently.
-              </p>
-            </div>
-
-            <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Email Address</label>
-                <input
-                  type="email"
-                  placeholder="you@domain.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="input-field"
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Password</label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="input-field"
-                />
-              </div>
-
-              {authError && (
-                <p style={{ color: '#ef4444', fontSize: '0.8rem', margin: 0 }}>{authError}</p>
-              )}
-
-              <button type="submit" disabled={isLoading} className="btn-primary" style={{ padding: '0.75rem', borderRadius: '8px', cursor: 'pointer', border: 'none' }}>
-                {isLoading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Sign In'}
-              </button>
-            </form>
-
-            <div style={{ display: 'flex', justifyContent: 'center', fontSize: '0.85rem' }}>
-              <button
-                onClick={() => setIsSignUp(!isSignUp)}
-                style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', padding: 0 }}
-              >
-                {isSignUp ? 'Already have an account? Sign In' : 'Create new account? Sign Up'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <AuthModal onClose={() => setIsAuthModalOpen(false)} />
       )}
     </div>
   );
