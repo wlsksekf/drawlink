@@ -66,3 +66,13 @@ services:
         reservations:
           cpus: '0.05'
           memory: 64M
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot-agent
+    volumes:
+      - ./certbot-data/conf:/etc/letsencrypt
+      - ./certbot-data/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet && nginx -s reload; sleep 12h & wait $${!}; done'"
+    depends_on:
+      - nginx

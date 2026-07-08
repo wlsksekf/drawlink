@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { LogOut, RefreshCw, Layers, Copy, Check, MousePointer2, PenTool, Eraser, PlusCircle, Trash2 } from 'lucide-react';
+import { LogOut, RefreshCw, Layers, Copy, Check, MousePointer2, PenTool, Eraser, PlusCircle, Trash2, Users } from 'lucide-react';
 import { supabase } from './supabase';
 import { Canvas } from './components/Canvas';
 import { StickyNotes } from './components/StickyNotes';
 import { AuthModal } from './components/AuthModal';
+import { RoomModal } from './components/RoomModal';
 
 interface UserSession {
   id: string;
@@ -40,11 +41,10 @@ export default function App() {
   // Session states - starts as guest automatically
   const [session, setSession] = useState<UserSession>(defaultGuest());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
 
   // App workspace states
   const [boardId, setBoardId] = useState('lobby');
-  const [newBoardId, setNewBoardId] = useState('');
-  const [copied, setCopied] = useState(false);
 
   // Active Tool Selection: 'select' (Grab/Type) | 'draw' (Neon Chalk) | 'erase' (Rubber)
   const [activeTool, setActiveTool] = useState<'select' | 'draw' | 'erase'>('draw');
@@ -98,6 +98,25 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Sync boardId with URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get('room');
+    if (roomParam && roomParam !== boardId) {
+      setBoardId(roomParam.toLowerCase());
+    }
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (boardId !== 'lobby') {
+      url.searchParams.set('room', boardId);
+    } else {
+      url.searchParams.delete('room');
+    }
+    window.history.replaceState({}, '', url.toString());
+  }, [boardId]);
 
   // WebSockets setup & dynamic url calculations
   useEffect(() => {
@@ -219,20 +238,7 @@ export default function App() {
     await supabase.auth.signOut();
   };
 
-  // Join Board Handler
-  const handleJoinBoard = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBoardId.trim()) return;
-    setBoardId(newBoardId.trim().toLowerCase());
-    setNewBoardId('');
-  };
 
-  // Copy Board URL
-  const copyBoardId = () => {
-    navigator.clipboard.writeText(boardId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   // Local Pointer Move: Broadcast coordinate changes
   const handleWorkspacePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -336,32 +342,23 @@ export default function App() {
             <span style={{ fontWeight: 600, fontSize: '1.15rem', letterSpacing: '-0.02em', color: '#fcf6f0' }}>DrawLink</span>
           </div>
 
-          {/* Board ID Display & Copy */}
-          <div className="glass-panel-light flex-center" style={{ padding: '0.4rem 0.8rem', borderRadius: '20px', gap: '0.4rem', fontSize: '0.85rem' }}>
+          {/* Board Management Button */}
+          <button
+            onClick={() => setIsRoomModalOpen(true)}
+            className="glass-panel-light flex-center tooltip"
+            data-tooltip="방 관리 / 공유"
+            style={{ 
+              padding: '0.45rem 1rem', borderRadius: '20px', gap: '0.5rem', 
+              fontSize: '0.85rem', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)',
+              color: '#ffffff', transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.2)'}
+          >
+            <Users size={16} color="#94a3b8" />
             <span style={{ color: '#dfd0c0' }}>Room:</span>
-            <span style={{ color: '#ffffff', fontWeight: 500 }}>{boardId}</span>
-            <button
-              onClick={copyBoardId}
-              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-green-500" style={{ color: '#22c55e' }} /> : <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-white" />}
-            </button>
-          </div>
-
-          {/* Board Switching Input */}
-          <form onSubmit={handleJoinBoard} style={{ display: 'flex', gap: '0.4rem' }}>
-            <input
-              type="text"
-              placeholder="Join room code..."
-              value={newBoardId}
-              onChange={(e) => setNewBoardId(e.target.value)}
-              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', width: '110px' }}
-              className="input-field"
-            />
-            <button type="submit" className="width-btn" style={{ padding: '0.35rem 0.6rem' }}>
-              Switch
-            </button>
-          </form>
+            <span style={{ fontWeight: 600, color: '#a5f3fc' }}>{boardId}</span>
+          </button>
         </div>
 
         {/* Action controls */}
@@ -590,6 +587,15 @@ export default function App() {
       {/* Auth Modal */}
       {isAuthModalOpen && (
         <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+      )}
+
+      {/* Room Modal */}
+      {isRoomModalOpen && (
+        <RoomModal
+          currentBoardId={boardId}
+          onJoinRoom={(newRoom) => setBoardId(newRoom.toLowerCase())}
+          onClose={() => setIsRoomModalOpen(false)}
+        />
       )}
     </div>
   );
