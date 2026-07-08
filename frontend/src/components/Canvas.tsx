@@ -13,6 +13,9 @@ interface CanvasProps {
   width: number;
   clearTrigger: number;
   tool: 'select' | 'draw' | 'erase';
+  panOffset: { x: number; y: number };
+  setPanOffset: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  onDoubleClick?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
 }
 
 interface RemoteLine {
@@ -94,7 +97,10 @@ export const Canvas: React.FC<CanvasProps> = ({
   color,
   width,
   clearTrigger,
-  tool
+  tool,
+  panOffset,
+  setPanOffset,
+  onDoubleClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef<boolean>(false);
@@ -110,6 +116,12 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Background color constant of our whiteboard grid (used for backward compatibility)
   const BG_COLOR = '#163020';
+
+  // Panning drag states (isGrabbing updates cursors, isPanningRef tracks panning synchronously)
+  const [isGrabbing, setIsGrabbing] = React.useState(false);
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const initialPanOffsetRef = useRef({ x: 0, y: 0 });
 
   // Determine active parameters based on tool selection
   const isEraser = tool === 'erase';
@@ -341,7 +353,16 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Local mouse / touch handlers
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (tool === 'select') return; // Do not draw if grab tool is active
+    if (tool === 'select') {
+      // Start Drag-to-Pan
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      isPanningRef.current = true;
+      setIsGrabbing(true);
+      panStartRef.current = { x: clientX, y: clientY };
+      initialPanOffsetRef.current = { ...panOffset };
+      return;
+    }
 
     const point = getCoordinates(e);
     if (!point) return;
@@ -367,6 +388,20 @@ export const Canvas: React.FC<CanvasProps> = ({
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (tool === 'select') {
+      if (!isPanningRef.current) return;
+      // Continue Drag-to-Pan
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      const dx = clientX - panStartRef.current.x;
+      const dy = clientY - panStartRef.current.y;
+      setPanOffset({
+        x: initialPanOffsetRef.current.x + dx,
+        y: initialPanOffsetRef.current.y + dy
+      });
+      return;
+    }
+
     if (!isDrawingRef.current) return;
     const point = getCoordinates(e);
     if (!point) return;
@@ -393,6 +428,12 @@ export const Canvas: React.FC<CanvasProps> = ({
   };
 
   const endDrawing = () => {
+    if (tool === 'select') {
+      isPanningRef.current = false;
+      setIsGrabbing(false);
+      return;
+    }
+
     if (!isDrawingRef.current) return;
     isDrawingRef.current = false;
 
@@ -424,8 +465,13 @@ export const Canvas: React.FC<CanvasProps> = ({
       onTouchStart={startDrawing}
       onTouchMove={draw}
       onTouchEnd={endDrawing}
+      onDoubleClick={onDoubleClick}
       className={`absolute top-0 left-0 w-full h-full touch-none ${
-        tool === 'select' ? 'cursor-board-select' : tool === 'erase' ? 'cursor-board-erase' : 'cursor-board-draw'
+        tool === 'select' 
+          ? (isGrabbing ? 'cursor-grabbing' : 'cursor-grab') 
+          : tool === 'erase' 
+            ? 'cursor-board-erase' 
+            : 'cursor-board-draw'
       }`}
     />
   );

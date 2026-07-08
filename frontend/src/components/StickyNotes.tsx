@@ -29,6 +29,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
   const dragStartRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
 
   // Deterministic rotation helper to give notes a natural, sticky-paper feel
@@ -264,19 +265,22 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
     >
       {notes.map((note) => {
         const isDragging = activeDragId === note.id;
-        const transformStyle = isDragging
-          ? `translate(${note.x}px, ${note.y}px) rotate(0deg) scale(1.04)`
-          : `translate(${note.x}px, ${note.y}px) rotate(${getTilt(note.id)})`;
+        const isHovered = hoveredNoteId === note.id;
+        const tilt = isHovered ? '0deg' : getTilt(note.id);
+        const scale = isDragging ? 1.04 : (isHovered ? 1.03 : 1);
+        const transformStyle = `translate(${note.x}px, ${note.y}px) rotate(${tilt}) scale(${scale})`;
 
         return (
           <div
             key={note.id}
             onMouseDown={(e) => handleMouseDown(e, note)}
+            onMouseEnter={() => setHoveredNoteId(note.id)}
+            onMouseLeave={() => setHoveredNoteId(null)}
             style={{
               transform: transformStyle,
               backgroundColor: note.color,
               position: 'absolute',
-              zIndex: isDragging ? 50 : 10
+              zIndex: isDragging ? 50 : (isHovered ? 45 : 10)
             }}
             className="pointer-events-auto w-48 p-3 rounded-lg shadow-lg border border-black/10 flex flex-col gap-2 cursor-move sticky-note-tilt"
           >
@@ -308,9 +312,8 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
               value={note.text}
               onChange={(e) => handleTextChange(note.id, e.target.value)}
               onBlur={() => handleTextBlur(note.id)}
-              placeholder={tool === 'select' ? "Type note here..." : "Switch to Select Tool to type"}
-              disabled={tool !== 'select'}
-              className="w-full h-24 bg-transparent resize-none border-none outline-none text-sm text-gray-800 placeholder-gray-500/60 leading-relaxed font-sans cursor-text disabled:cursor-not-allowed"
+              placeholder="Type note here..."
+              className="w-full h-24 bg-transparent resize-none border-none outline-none text-sm text-gray-800 placeholder-gray-500/60 leading-relaxed font-sans cursor-text select-text"
             />
           </div>
         );

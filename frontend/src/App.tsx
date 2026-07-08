@@ -58,6 +58,9 @@ export default function App() {
   const [brushWidth, setBrushWidth] = useState(8); // thicker default brush
   const [clearTrigger, setClearTrigger] = useState(0);
 
+  // Panning offsets for virtual board scroll
+  const [panOffset, setPanOffset] = useState({ x: -1000, y: -1000 });
+
   // Sticky notes states
   const [notes, setNotes] = useState<StickyNote[]>([]);
 
@@ -213,6 +216,7 @@ export default function App() {
     };
 
     fetchStickies();
+    setPanOffset({ x: -1000, y: -1000 }); // reset pan position to center on board switch
   }, [boardId, clearTrigger]);
 
   // Auth Submit Actions
@@ -265,8 +269,8 @@ export default function App() {
     lastCursorSentRef.current = now;
 
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = e.clientX - rect.left - panOffset.x; // Convert to virtual world coordinates
+    const y = e.clientY - rect.top - panOffset.y; // Convert to virtual world coordinates
 
     wsRef.current.send(
       JSON.stringify({
@@ -281,12 +285,8 @@ export default function App() {
     );
   };
 
-  // Double-Click canvas wrapper to spawn a sticky note
-  const handleDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).tagName !== 'CANVAS' && (e.target as HTMLElement).id !== 'notes-container-mask') {
-      return;
-    }
-
+  // Double-Click canvas to spawn a sticky note inside virtual space
+  const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left - 96;
     const y = e.clientY - rect.top - 64;
@@ -327,7 +327,8 @@ export default function App() {
   };
 
   const handleToolbarSpawnSticky = () => {
-    spawnSticky(250 + Math.random() * 80, 200 + Math.random() * 80);
+    // Spawns note centered relative to the panned board viewport
+    spawnSticky(250 + Math.random() * 80 - panOffset.x, 200 + Math.random() * 80 - panOffset.y);
   };
 
   // Reset Board DB contents & clear screen
@@ -352,19 +353,19 @@ export default function App() {
   };
 
   return (
-    <div className="bg-grid-dark app-container">
+    <div className="app-container" style={{ backgroundColor: '#0e2016' }}>
       {/* Upper Navigation Header */}
       <header className="glass-panel board-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Layers className="w-5 h-5 text-blue-500" style={{ color: '#3b82f6' }} />
-            <span style={{ fontWeight: 600, fontSize: '1.15rem', letterSpacing: '-0.02em' }}>DrawLink</span>
+            <Layers className="w-5 h-5 text-blue-500" style={{ color: '#60a5fa' }} />
+            <span style={{ fontWeight: 600, fontSize: '1.15rem', letterSpacing: '-0.02em', color: '#fcf6f0' }}>DrawLink</span>
           </div>
 
           {/* Board ID Display & Copy */}
           <div className="glass-panel-light flex-center" style={{ padding: '0.4rem 0.8rem', borderRadius: '20px', gap: '0.4rem', fontSize: '0.85rem' }}>
-            <span style={{ color: '#94a3b8' }}>Room:</span>
-            <span style={{ color: '#f8fafc', fontWeight: 500 }}>{boardId}</span>
+            <span style={{ color: '#dfd0c0' }}>Room:</span>
+            <span style={{ color: '#ffffff', fontWeight: 500 }}>{boardId}</span>
             <button
               onClick={copyBoardId}
               style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -405,14 +406,14 @@ export default function App() {
                 boxShadow: wsStatus === 'connected' ? '0 0 8px #22c55e' : wsStatus === 'connecting' ? '0 0 8px #eab308' : '0 0 8px #ef4444'
               }}
             />
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'capitalize' }}>
+            <span style={{ fontSize: '0.75rem', color: '#dfd0c0', textTransform: 'capitalize' }}>
               {wsStatus === 'connected' ? 'Connected' : wsStatus === 'connecting' ? 'Syncing...' : 'Offline'}
             </span>
           </div>
 
-          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.15)' }} />
 
-          <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 500 }}>
+          <span style={{ fontSize: '0.8rem', color: '#fcf6f0', fontWeight: 500 }}>
             {session.isGuest ? 'Guest' : session.email.split('@')[0]}
           </span>
 
@@ -450,52 +451,78 @@ export default function App() {
 
       {/* Main Canvas Workspace & Stickies */}
       <main
-        className="canvas-container"
-        onDoubleClick={handleDoubleClick}
+        className="canvas-container blackboard-frame"
         onPointerMove={handleWorkspacePointerMove}
-        style={{ margin: '1rem', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', background: 'rgba(15,23,42,0.2)', position: 'relative' }}
+        style={{
+          margin: '1rem',
+          position: 'relative',
+          overflow: 'hidden',
+          background: '#163020'
+        }}
       >
-        <Canvas
-          boardId={boardId}
-          userId={session.id}
-          ws={wsRef.current}
-          color={brushColor}
-          width={brushWidth}
-          clearTrigger={clearTrigger}
-          tool={activeTool}
-        />
-        
-        <div id="notes-container-mask" className="absolute inset-0 pointer-events-none">
-          <StickyNotes
+        {/* Viewport Wrapper that translates everything inside */}
+        <div
+          style={{
+            transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
+            width: '3000px',
+            height: '3000px',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            transformOrigin: 'top left',
+            backgroundSize: '36px 36px',
+            backgroundImage: `
+              linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px)
+            `,
+            backgroundColor: '#163020'
+          }}
+        >
+          <Canvas
             boardId={boardId}
             userId={session.id}
             ws={wsRef.current}
-            notes={notes}
-            setNotes={setNotes}
+            color={brushColor}
+            width={brushWidth}
+            clearTrigger={clearTrigger}
             tool={activeTool}
+            panOffset={panOffset}
+            setPanOffset={setPanOffset}
+            onDoubleClick={handleCanvasDoubleClick}
           />
+          
+          <div id="notes-container-mask" className="absolute inset-0 pointer-events-none">
+            <StickyNotes
+              boardId={boardId}
+              userId={session.id}
+              ws={wsRef.current}
+              notes={notes}
+              setNotes={setNotes}
+              tool={activeTool}
+            />
+          </div>
+
+          {/* Remote Cursors Renderer */}
+          {Object.entries(remoteCursors).map(([id, cursor]) => (
+            <div
+              key={id}
+              className="remote-cursor"
+              style={{
+                transform: `translate(${cursor.x}px, ${cursor.y}px)`,
+                color: cursor.color
+              }}
+            >
+              <div className="remote-cursor-pointer" />
+              <div className="remote-cursor-label">
+                {cursor.email.split('@')[0]}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Remote Cursors Renderer */}
-        {Object.entries(remoteCursors).map(([id, cursor]) => (
-          <div
-            key={id}
-            className="remote-cursor"
-            style={{
-              transform: `translate(${cursor.x}px, ${cursor.y}px)`,
-              color: cursor.color
-            }}
-          >
-            <div className="remote-cursor-pointer" />
-            <div className="remote-cursor-label">
-              {cursor.email.split('@')[0]}
-            </div>
-          </div>
-        ))}
-
-        {/* Tooltip explaining double clicks */}
-        <div style={{ position: 'absolute', top: '12px', left: '12px', pointerEvents: 'none', color: '#475569', fontSize: '0.75rem' }}>
-          * Double-click canvas space to place sticky notes. Set cursor tool below to interact.
+        {/* Tooltip explaining double clicks (fixed on screen, outside translation div) */}
+        <div style={{ position: 'absolute', top: '12px', left: '12px', pointerEvents: 'none', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 500 }}>
+          * Double-click empty canvas space to place sticky notes. Drag background with Select tool to pan.
         </div>
       </main>
 

@@ -46,20 +46,29 @@ body {
   pointer-events: none;
 }
 
-/* Glassmorphism Panels */
+/* Blackboard Frame (Border Removed) */
+.blackboard-frame {
+  border-radius: 12px;
+  box-shadow: 
+    inset 0 0 16px rgba(0, 0, 0, 0.6),
+    0 8px 24px rgba(0, 0, 0, 0.2);
+  background: #163020;
+}
+
+/* Glassmorphism Panels (Now styled as warm wood-toned panels) */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(111, 78, 55, 0.93); /* rich warm coffee wood brown */
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 .glass-panel-light {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Glow effects */
@@ -122,19 +131,23 @@ body {
 }
 
 .input-field {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   padding: 0.75rem 1rem;
-  color: white;
+  color: #ffffff;
   outline: none;
   font-size: 0.95rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+.input-field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
 .input-field:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
 }
 
 .app-container {
@@ -178,15 +191,15 @@ body {
 }
 
 .color-btn.active {
-  border-color: white;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  border-color: #ffffff; /* High contrast white border */
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
   transform: scale(1.1);
 }
 
 .width-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fcf6f0;
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -195,9 +208,10 @@ body {
 }
 
 .width-btn:hover, .width-btn.active {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.3);
+  background: #ffffff;
+  color: #5c3a21; /* dark wood brown text inside white button */
+  border-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.25);
 }
 
 /* ==============================================================================
@@ -210,15 +224,15 @@ body {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(111, 78, 55, 0.95); /* rich warm coffee wood brown */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 24px;
   padding: 0.4rem 0.8rem;
   gap: 0.4rem;
   z-index: 50;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.45);
 }
 
 .dock-item {
@@ -229,7 +243,7 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  color: #94a3b8;
+  color: #dfd0c0;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -238,22 +252,22 @@ body {
 }
 
 .dock-item:hover {
-  color: #f8fafc;
-  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
   transform: translateY(-4px);
 }
 
 .dock-item.active {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.25);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
 }
 
 .dock-divider {
   width: 1px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   margin: 0 0.25rem;
 }
 
@@ -301,16 +315,14 @@ body {
 }
 
 .sticky-note-tilt:hover {
-  transform: rotate(0deg) scale(1.03) !important;
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.35);
-  z-index: 45 !important;
 }
 
 /* Custom Cursors according to Whiteboard Tool Selection */
-.cursor-board-select {
+.cursor-grab {
   cursor: grab;
 }
-.cursor-board-select:active {
+.cursor-grabbing {
   cursor: grabbing;
 }
 .cursor-board-draw {
@@ -372,4 +384,64 @@ body {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* ==============================================================================
+    CSS HELPER UTILITIES (Tailwind replacements for sticky note layouts)
+   ============================================================================== */
+.absolute {
+  position: absolute;
+}
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.pointer-events-none {
+  pointer-events: none;
+}
+.pointer-events-auto {
+  pointer-events: auto;
+}
+.overflow-hidden {
+  overflow: hidden;
+}
+.select-none {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.flex {
+  display: flex;
+}
+.flex-col {
+  flex-direction: column;
+}
+.gap-2 {
+  gap: 0.5rem;
+}
+.w-48 {
+  width: 12rem;
+}
+.p-3 {
+  padding: 0.75rem;
+}
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.border {
+  border-width: 1px;
+}
+.border-black\/10 {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+.cursor-move {
+  cursor: move;
+}
+.select-text {
+  user-select: text;
+  -webkit-user-select: text;
 }
