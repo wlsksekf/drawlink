@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;500;600;700&display=swap');
 
 :root {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -308,14 +308,14 @@ body {
 }
 
 /* ==============================================================================
-    STICKY NOTE NATURAL PAPERS (Tilted and Peel Accents)
+    STICKY NOTE NATURAL PAPERS (Post-it Style)
    ============================================================================== */
-.sticky-note-tilt {
-  transition: transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 0.2s;
+.sticky-note-wrapper {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.18));
 }
 
-.sticky-note-tilt:hover {
-  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.35);
+.sticky-note-wrapper:hover {
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.28));
 }
 
 /* Custom Cursors according to Whiteboard Tool Selection */
