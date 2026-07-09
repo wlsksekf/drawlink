@@ -46,7 +46,7 @@ engine = create_async_engine(
     pool_recycle=1800,        # 끊긴 연결 방지를 위한 30분 주기 연결 재활용
     pool_pre_ping=True,       # 연결을 풀에서 꺼내기 전 유효성 사전 검증(핑 테스트)
     echo=False,               # 프로덕션/부하 테스트 환경용 SQL 로그 비활성화
-    connect_args=connect_args # 👈 위에서 조율한 SSL 및 캐시 옵션 딕셔너리를 단일 주입
+    connect_args=connect_args # 위에서 조율한 SSL 및 캐시 옵션 딕셔너리를 단일 주입
 )
 
 # 비동기 세션 팩토리 생성
