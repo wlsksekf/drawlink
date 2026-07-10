@@ -120,21 +120,25 @@ export default function App() {
 
   // 웹소켓 설정 및 동적 연결 주소 생성
   useEffect(() => {
+    let isMounted = true;
+
     const connectWebSocket = () => {
       setWsStatus('connecting');
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
+      const host = window.location.hostname === 'localhost' ? 'localhost:8000' : window.location.host;
       const wsUrl = `${protocol}//${host}/api/ws/${boardId}${session.token ? `?token=${session.token}` : ''}`;
       
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
 
       socket.onopen = () => {
+        if (!isMounted) return;
         setWsStatus('connected');
       };
 
       socket.onclose = () => {
+        if (!isMounted) return;
         setWsStatus('disconnected');
         reconnectTimeoutRef.current = window.setTimeout(() => {
           connectWebSocket();
@@ -142,20 +146,13 @@ export default function App() {
       };
 
       socket.onerror = () => {
+        if (!isMounted) return;
         setWsStatus('disconnected');
       };
     };
 
     connectWebSocket();
 
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-    };
   }, [session, boardId]);
 
   // 원격 마우스 포인터 이동 이벤트 수신
