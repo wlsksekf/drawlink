@@ -10,7 +10,6 @@ env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
 
 jobs:
-  # 1단계: 빌드 작업 (Docker Hub에 이미지 빌드 및 푸시)
   build:
     runs-on: ubuntu-latest
     steps:
@@ -46,7 +45,6 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
             ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:latest
 
-  # 2단계: 배포 작업 (오라클 VM에 최신 이미지 배포)
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -54,7 +52,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. 원래 프로젝트 파일 전송
+      # 1) 드로우링크 도커 컴포즈 파일 전송
       - name: Transfer config files to Oracle VM
         uses: appleboy/scp-action@v1.0.0
         with:
@@ -64,7 +62,7 @@ jobs:
           source: "docker-compose.yml"
           target: "/home/${{ secrets.SERVER_USER }}/drawlink"
       
-      # 2. 드로우링크 Nginx 설정을 메인 프록시 폴더로 직접 전송
+      # 2) 최상위 관리본 drawlink.conf 설정을 메인 프록시 폴더로 직접 전송
       - name: Transfer Nginx Config to Global Proxy
         uses: appleboy/scp-action@v1.0.0
         with:
@@ -74,7 +72,7 @@ jobs:
           source: "nginx/drawlink.conf"
           target: "/home/${{ secrets.SERVER_USER }}/global-proxy"
 
-      # 3. 서버 접속 후 컨테이너 가동 및 메인 프록시 동기화
+      # 3) 서버 접속 후 가동 및 메인 프록시 동기화
       - name: Deploy to Oracle VM
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -85,25 +83,21 @@ jobs:
             set -e
             cd /home/${{ secrets.SERVER_USER }}/drawlink
             
-            # 1) 환경 변수 세팅
             echo "${{ secrets.DOT_ENV }}" > .env
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
             echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}" >> .env
             echo "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" >> .env
             
-            # Docker Hub 로그인
             echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
             
-            # 2) 기존 컨테이너 및 찌꺼기 껍데기 강제 파괴
             docker compose down --remove-orphans
             docker container prune -f
             docker image prune -a -f
             
-            # 3) 이미지 풀 및 가동
             docker compose pull
             docker compose up -d
 
-            # 4) 메인 Nginx 가상 네트워크망 및 설정 파일 최종 동기화
+            # 4) 메인 Nginx 가상 네트워크망 및 설정 파일 최종 리프레시
             echo "Syncing Global Proxy Nginx..."
             cd /home/${{ secrets.SERVER_USER }}/global-proxy
             docker compose down

@@ -5,48 +5,31 @@ services:
     image: ${DOCKER_USERNAME:-drawlink}/${BACKEND_IMAGE:-backend}:latest
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: ./backend/Dockerfile
     container_name: drawlink-backend
-    restart: always
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
-      - PORT=8000
-    expose:
-      - "8000"
     deploy:
       resources:
         limits:
-          cpus: '0.50'
-          memory: 512M
-        reservations:
-          cpus: '0.10'
-          memory: 128M
+          cpus: '1.0'
+          memory: 1024M
     networks:
       - global-network
+    restart: always
 
   frontend:
     image: ${DOCKER_USERNAME:-drawlink}/${FRONTEND_IMAGE:-frontend}:latest
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: ./frontend/Dockerfile
       args:
         - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
         - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
     container_name: drawlink-frontend
-    restart: always
     depends_on:
       - backend
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
-        reservations:
-          cpus: '0.05'
-          memory: 64M
     networks:
       - global-network
+    restart: always
 
 networks:
   global-network:
