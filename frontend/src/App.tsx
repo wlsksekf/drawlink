@@ -38,38 +38,38 @@ const defaultGuest = (): UserSession => ({
 });
 
 export default function App() {
-  // Session states - starts as guest automatically
+  // 세션 상태 관리 - 기본값으로 게스트로 시작합니다
   const [session, setSession] = useState<UserSession>(defaultGuest());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
 
-  // App workspace states
+  // 앱 워크스페이스(현재 보드) 상태
   const [boardId, setBoardId] = useState('lobby');
 
-  // Active Tool Selection: 'select' (Grab/Type) | 'draw' (Neon Chalk) | 'erase' (Rubber)
+  // 활성 도구 선택: 'select' (선택/이동) | 'draw' (네온 초크 드로잉) | 'erase' (지우개)
   const [activeTool, setActiveTool] = useState<'select' | 'draw' | 'erase'>('draw');
 
-  // Canvas stroke settings
-  const [brushColor, setBrushColor] = useState('#ffffff'); // chalk white default
-  const [brushWidth, setBrushWidth] = useState(8); // thicker default brush
+  // 캔버스 드로잉(선 굵기/색상) 설정
+  const [brushColor, setBrushColor] = useState('#ffffff'); // 기본 색상: 칠판 흰색
+  const [brushWidth, setBrushWidth] = useState(8); // 기본 브러시 굵기
   const [clearTrigger, setClearTrigger] = useState(0);
 
-  // Panning offsets for virtual board scroll
+  // 가상 보드 스크롤을 위한 화면 이동(팬) 오프셋
   const [panOffset, setPanOffset] = useState({ x: -1000, y: -1000 });
 
-  // Sticky notes states
+  // 포스트잇 상태 관리
   const [notes, setNotes] = useState<StickyNote[]>([]);
 
-  // Remote cursors state
+  // 다른 사용자의 원격 커서 상태 관리
   const [remoteCursors, setRemoteCursors] = useState<Record<string, RemoteCursor>>({});
   const lastCursorSentRef = useRef<number>(0);
 
-  // WebSocket reference & connection status
+  // 웹소켓 객체 참조 및 연결 상태 관리
   const [wsStatus, setWsStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
 
-  // Check current Supabase session on mount
+  // 컴포넌트 마운트 시 현재 Supabase 세션 확인
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: sbSession } }) => {
       if (sbSession) {
@@ -90,7 +90,7 @@ export default function App() {
           token: sbSession.access_token,
           isGuest: false
         });
-        setIsAuthModalOpen(false); // Close modal when logged in
+        setIsAuthModalOpen(false); // 로그인 성공 시 모달 닫기
       } else {
         setSession(defaultGuest());
       }
@@ -99,7 +99,7 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sync boardId with URL
+  // URL 파라미터와 현재 boardId 동기화
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
@@ -118,14 +118,14 @@ export default function App() {
     window.history.replaceState({}, '', url.toString());
   }, [boardId]);
 
-  // WebSockets setup & dynamic url calculations
+  // 웹소켓 설정 및 동적 연결 주소 생성
   useEffect(() => {
     const connectWebSocket = () => {
       setWsStatus('connecting');
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
-      const wsUrl = `${protocol}//${host}/ws/${boardId}${session.token ? `?token=${session.token}` : ''}`;
+      const wsUrl = `${protocol}//${host}/api/ws/${boardId}${session.token ? `?token=${session.token}` : ''}`;
       
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
@@ -158,7 +158,7 @@ export default function App() {
     };
   }, [session, boardId]);
 
-  // Listen for remote mouse pointer movements
+  // 원격 마우스 포인터 이동 이벤트 수신
   useEffect(() => {
     if (!wsRef.current || wsStatus !== 'connected') return;
 
@@ -167,9 +167,9 @@ export default function App() {
         const msg = JSON.parse(event.data);
         if (msg.type === 'cursor') {
           const { x, y, user_id, email: senderEmail } = msg.data;
-          if (user_id === session.id) return; // ignore local pointer reflections
+          if (user_id === session.id) return; // 자신의 포인터 움직임은 무시합니다
 
-          // Deterministic color assignment based on user_id hash
+          // user_id 해시를 기반으로 일관된 색상을 할당합니다
           const colors = ['#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#ef4444', '#06b6d4'];
           let hash = 0;
           for (let i = 0; i < user_id.length; i++) {
@@ -196,7 +196,7 @@ export default function App() {
     return () => ws.removeEventListener('message', handleWSMessage);
   }, [wsStatus, session]);
 
-  // Periodically prune stagnant remote cursors (if idle/offline for >5 seconds)
+  // 비활성 원격 커서 주기적으로 정리 (5초 이상 대기/오프라인인 경우)
   useEffect(() => {
     const pruneTimer = setInterval(() => {
       const now = Date.now();
@@ -216,7 +216,7 @@ export default function App() {
     return () => clearInterval(pruneTimer);
   }, []);
 
-  // Fetch initial stickies on board change
+  // 보드가 변경될 때 초기 포스트잇 목록을 불러옵니다
   useEffect(() => {
     const fetchStickies = async () => {
       try {
@@ -231,7 +231,7 @@ export default function App() {
     };
 
     fetchStickies();
-    setPanOffset({ x: -1000, y: -1000 }); // reset pan position to center on board switch
+    setPanOffset({ x: -1000, y: -1000 }); // 보드 전환 시 화면 위치를 중앙으로 초기화
   }, [boardId, clearTrigger]);
 
   const handleLogout = async () => {
@@ -240,17 +240,17 @@ export default function App() {
 
 
 
-  // Local Pointer Move: Broadcast coordinate changes
+  // 로컬 마우스 이동: 변경된 좌표를 브로드캐스트
   const handleWorkspacePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!wsRef.current || wsStatus !== 'connected') return;
 
     const now = Date.now();
-    if (now - lastCursorSentRef.current < 50) return; // throttle to 20 updates/second
+    if (now - lastCursorSentRef.current < 50) return; // 초당 20회 업데이트로 스로틀링(제한)
     lastCursorSentRef.current = now;
 
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - panOffset.x; // Convert to virtual world coordinates
-    const y = e.clientY - rect.top - panOffset.y; // Convert to virtual world coordinates
+    const x = e.clientX - rect.left - panOffset.x; // 가상 세계 좌표로 변환
+    const y = e.clientY - rect.top - panOffset.y; // 가상 세계 좌표로 변환
 
     wsRef.current.send(
       JSON.stringify({
@@ -265,7 +265,7 @@ export default function App() {
     );
   };
 
-  // Double-Click canvas to spawn a sticky note inside virtual space
+  // 캔버스 더블 클릭 시 가상 공간 내에 포스트잇 생성
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left - 96;
@@ -274,7 +274,7 @@ export default function App() {
     spawnSticky(x, y);
   };
 
-  // Spawns a note at explicit coordinates
+  // 지정된 명시적 좌표에 포스트잇을 생성합니다
   const spawnSticky = (x: number, y: number) => {
     const newNoteId = `note_${session.id}_${Date.now()}`;
     const newNote = {
@@ -307,15 +307,15 @@ export default function App() {
   };
 
   const handleToolbarSpawnSticky = () => {
-    // Spawns note centered relative to the panned board viewport
+    // 화면(viewport) 중앙을 기준으로 포스트잇을 생성합니다
     spawnSticky(250 + Math.random() * 80 - panOffset.x, 200 + Math.random() * 80 - panOffset.y);
   };
 
-  // Reset Board DB contents & clear screen
+  // 보드의 DB 데이터를 초기화하고 화면을 지웁니다
   const handleClearBoard = async () => {
     if (!window.confirm('Are you sure you want to clear the entire blackboard?')) return;
     
-    // Clear UI state instantly for responsiveness (Optimistic clear)
+    // 빠른 반응성을 위해 UI 상태를 즉시 지웁니다 (낙관적 업데이트)
     setNotes([]);
     const canvas = document.querySelector('canvas');
     if (canvas) {
@@ -325,7 +325,7 @@ export default function App() {
     setClearTrigger((prev) => prev + 1);
 
     try {
-      // Send clear command in the background
+      // 백그라운드에서 초기화 명령을 전송합니다
       await fetch(`/api/boards/${boardId}/clear`, { method: 'DELETE' });
     } catch (err) {
       console.error('Failed to sync board clear to server:', err);
@@ -548,13 +548,13 @@ export default function App() {
             {activeTool === 'draw' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0 0.25rem' }}>
                 {[
-                  '#ffffff', // Soft White Chalk
-                  '#fef08a', // Soft Yellow Chalk
-                  '#fecdd3', // Soft Pink Chalk
-                  '#bae6fd', // Soft Blue Chalk
-                  '#f5d0fe', // Soft Purple Chalk
-                  '#bbf7d0', // Soft Green Chalk
-                  '#ffedd5'  // Soft Orange Chalk
+                  '#ffffff', // 부드러운 흰색 초크
+                  '#fef08a', // 부드러운 노란색 초크
+                  '#fecdd3', // 부드러운 분홍색 초크
+                  '#bae6fd', // 부드러운 파란색 초크
+                  '#f5d0fe', // 부드러운 보라색 초크
+                  '#bbf7d0', // 부드러운 초록색 초크
+                  '#ffedd5'  // 부드러운 주황색 초크
                 ].map((c) => (
                   <button
                     key={c}

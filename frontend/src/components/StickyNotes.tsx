@@ -19,7 +19,7 @@ interface StickyNotesProps {
   tool: 'select' | 'draw' | 'erase';
 }
 
-// Pastel post-it color palette (warm, saturated paper tones)
+// 파스텔톤 포스트잇 색상 팔레트 (따뜻하고 채도 높은 종이 색감)
 const NOTE_COLORS = [
   { bg: '#fef08a', shadow: '#d4a017', tape: '#fde68a', label: 'Yellow' },
   { bg: '#fda4af', shadow: '#be123c', tape: '#fecdd3', label: 'Pink' },
@@ -41,26 +41,26 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
   const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
   const dragStartRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
 
-  // Deterministic stable tilt per note id
+  // 노트 ID를 기반으로 일관된 고정 기울기 계산
   const getTilt = (id: string): number => {
     let sum = 0;
     for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i);
-    return ((sum % 60) - 30) / 10; // -3.0 to +3.0 degrees
+    return ((sum % 60) - 30) / 10; // -3.0도 ~ +3.0도 범위
   };
 
-  // Get tape strip rotation (top tape piece)
+  // 상단 테이프 조각의 회전 각도 계산
   const getTapeAngle = (id: string): number => {
     let sum = 0;
     for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i) * (i + 1);
-    return ((sum % 30) - 15); // -15 to +15 degrees
+    return ((sum % 30) - 15); // -15도 ~ +15도 범위
   };
 
-  // Get color config for note
+  // 노트의 색상 설정 가져오기
   const getColorConfig = (color: string) => {
     return NOTE_COLORS.find(c => c.bg === color) || NOTE_COLORS[0];
   };
 
-  // Listen to WebSocket messages for sticky notes
+  // 포스트잇 이벤트를 위한 웹소켓 메시지 수신
   useEffect(() => {
     if (!ws) return;
 
@@ -109,7 +109,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
     return () => ws.removeEventListener('message', handleMessage);
   }, [ws, setNotes]);
 
-  // Handle Drag Start
+  // 드래그 시작 이벤트 처리
   const handleMouseDown = (e: React.MouseEvent, note: StickyNote) => {
     if ((e.target as HTMLElement).tagName === 'TEXTAREA' || (e.target as HTMLElement).closest('button')) return;
     e.preventDefault();
@@ -120,7 +120,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
     };
   };
 
-  // Handle Drag Move
+  // 드래그 이동 이벤트 처리
   const handleMouseMove = (e: MouseEvent) => {
     if (!activeDragId || !containerRef.current) return;
 
@@ -151,7 +151,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
     }
   };
 
-  // Handle Drag End
+  // 드래그 종료 이벤트 처리
   const handleMouseUp = () => {
     if (!activeDragId) return;
     const note = notes.find((n) => n.id === activeDragId);
@@ -289,7 +289,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
                 zIndex: 2,
                 border: `1px solid ${colorConfig.bg}`,
                 backdropFilter: 'none',
-                // Tape texture lines
+                // 테이프 질감 선 표현
                 backgroundImage: `repeating-linear-gradient(
                   90deg,
                   transparent,
@@ -321,7 +321,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
                 position: 'relative',
                 cursor: isDragging ? 'grabbing' : 'grab',
                 overflow: 'hidden',
-                // Paper fold corner effect via border
+                // 테두리를 활용한 종이 접힘(모서리) 효과 표현
                 clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%)',
               }}
             >

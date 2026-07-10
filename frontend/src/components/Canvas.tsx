@@ -24,10 +24,10 @@ interface RemoteLine {
   width: number;
 }
 
-// Pre-render a fuzzy, noisy circle brush for chalk texture with core roughness and outer dust halos
+// 초크 질감을 위해 내부 코어와 외부 분필 가루가 있는 원형 브러시를 미리 렌더링합니다
 const createChalkBrush = (color: string, size: number): HTMLCanvasElement => {
   const brush = document.createElement('canvas');
-  // Add padding around the core to contain the outer scattered dust particles
+  // 분산된 외부 분필 가루 입자를 포함할 수 있도록 코어 주변에 여백(패딩)을 추가합니다
   const padding = Math.max(8, size * 0.8);
   const brushSize = size + padding * 2;
   brush.width = brushSize;
@@ -38,41 +38,41 @@ const createChalkBrush = (color: string, size: number): HTMLCanvasElement => {
   const center = brushSize / 2;
   const radius = size / 2;
 
-  // 1. Draw bumpy, rough chalk core (by overlaying multiple offset soft circles)
+  // 1. 울퉁불퉁하고 거친 초크 코어 그리기 (위치가 조금씩 다른 부드러운 원들을 겹침)
   ctx.fillStyle = color;
   const coreDots = 8;
   for (let i = 0; i < coreDots; i++) {
     const offsetLimit = radius * 0.15;
     const ox = (Math.random() - 0.5) * offsetLimit;
     const oy = (Math.random() - 0.5) * offsetLimit;
-    const r = radius * (0.8 + Math.random() * 0.3); // slight variations in size
+    const r = radius * (0.8 + Math.random() * 0.3); // 크기의 미세한 변화
     
-    ctx.globalAlpha = 0.2 + Math.random() * 0.3; // layering soft circles
+    ctx.globalAlpha = 0.2 + Math.random() * 0.3; // 부드러운 원 투명도 겹치기
     ctx.beginPath();
     ctx.arc(center + ox, center + oy, r, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // 2. Draw outer scattered chalk dust halo particles
+  // 2. 외부에 흩뿌려진 분필 가루 입자 그리기
   const dustCount = Math.floor(size * 1.5) + 12;
   ctx.fillStyle = color;
   for (let i = 0; i < dustCount; i++) {
     const angle = Math.random() * Math.PI * 2;
-    // Distribute particles from inner core up to 1.8x core radius
+    // 내부 코어에서 코어 반경의 최대 1.8배까지 입자 분산
     const dist = radius * 0.4 + Math.random() * (radius * 1.4 + 4);
     const dx = Math.cos(angle) * dist;
     const dy = Math.sin(angle) * dist;
 
-    const dustSize = Math.random() * 1.3 + 0.4; // tiny speckles between 0.4px and 1.7px
-    ctx.globalAlpha = Math.random() * 0.4 + 0.15; // low opacity particles
+    const dustSize = Math.random() * 1.3 + 0.4; // 0.4px과 1.7px 사이의 아주 작은 입자
+    ctx.globalAlpha = Math.random() * 0.4 + 0.15; // 낮은 투명도 입자
     ctx.beginPath();
     ctx.arc(center + dx, center + dy, dustSize, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  ctx.globalAlpha = 1.0; // reset
+  ctx.globalAlpha = 1.0; // 투명도 초기화
 
-  // 3. Post-process to make the texture porous (rough chalkboard noise filter)
+  // 3. 다공성 질감으로 만들기 위한 후처리 (거친 칠판 노이즈 필터 적용)
   const imgData = ctx.getImageData(0, 0, brushSize, brushSize);
   const data = imgData.data;
   for (let i = 0; i < data.length; i += 4) {
@@ -80,9 +80,9 @@ const createChalkBrush = (color: string, size: number): HTMLCanvasElement => {
     if (alpha > 0) {
       const rand = Math.random();
       if (rand > 0.5) {
-        data[i + 3] = 0; // Cut out pixels to create empty pores
+        data[i + 3] = 0; // 픽셀을 잘라내어 빈 공간(기공) 생성
       } else {
-        data[i + 3] = Math.floor(alpha * (Math.random() * 0.65 + 0.25)); // uneven chalk thickness
+        data[i + 3] = Math.floor(alpha * (Math.random() * 0.65 + 0.25)); // 불균일한 분필 두께 표현
       }
     }
   }
@@ -108,24 +108,24 @@ export const Canvas: React.FC<CanvasProps> = ({
   const lastPointRef = useRef<Point>({ x: 0, y: 0 });
   const pointsAccumulatorRef = useRef<Point[]>([]);
 
-  // Track remote draw states to connect segments smoothly
+  // 부드러운 선 연결을 위해 원격 드로잉 상태 추적
   const remoteLinesRef = useRef<Record<string, RemoteLine>>({});
 
-  // Chalk Brush cache
+  // 초크 브러시 캐시
   const brushCacheRef = useRef<Record<string, HTMLCanvasElement>>({});
 
-  // Panning drag states (isGrabbing updates cursors, isPanningRef tracks panning synchronously)
+  // 화면 이동(팬) 드래그 상태 (isGrabbing은 커서를 업데이트하고, isPanningRef는 동기식으로 추적함)
   const [isGrabbing, setIsGrabbing] = React.useState(false);
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const initialPanOffsetRef = useRef({ x: 0, y: 0 });
 
-  // Determine active parameters based on tool selection
+  // 선택한 도구에 따른 활성 파라미터 결정
   const isEraser = tool === 'erase';
   const activeColor = isEraser ? 'eraser' : color;
   const activeWidth = isEraser ? Math.max(24, width * 4) : width;
 
-  // Draw segment utility that handles both eraser and chalk textures
+  // 지우개와 초크 질감 모두를 처리하는 선 그리기 유틸리티 함수
   const drawSegmentInCtx = (
     ctx: CanvasRenderingContext2D,
     start: Point,
@@ -160,11 +160,11 @@ export const Canvas: React.FC<CanvasProps> = ({
     const dy = end.y - start.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     
-    // Stamp the brush along the line at small intervals for density
+    // 밀도를 높이기 위해 짧은 간격으로 브러시를 선을 따라 찍음
     const step = Math.max(1.2, strokeWidth / 5);
     const steps = Math.max(1, dist / step);
     
-    // Offset calculation based on padded brush size
+    // 패딩이 적용된 브러시 크기를 기반으로 오프셋 계산
     const padding = Math.max(8, strokeWidth * 0.8);
     const brushSize = strokeWidth + padding * 2;
     
@@ -184,7 +184,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     drawSegmentInCtx(ctx, start, end, strokeColor, strokeWidth);
   };
 
-  // Fetch initial board state and render it
+  // 초기 보드 상태를 가져오고 렌더링
   useEffect(() => {
     const fetchDrawings = async () => {
       try {
@@ -197,10 +197,10 @@ export const Canvas: React.FC<CanvasProps> = ({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Clear canvas before drawing history
+        // 기존 선을 그리기 전에 캔버스 초기화
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw historic lines
+        // 기록된 선들을 그림
         drawings.forEach((drawing: any) => {
           const pts = drawing.points;
           if (pts && pts.length > 1) {
@@ -229,7 +229,7 @@ export const Canvas: React.FC<CanvasProps> = ({
           }
         });
         
-        ctx.globalCompositeOperation = 'source-over'; // Reset
+        ctx.globalCompositeOperation = 'source-over'; // 합성 모드 초기화
       } catch (err) {
         console.error('Error fetching drawings:', err);
       }
@@ -238,7 +238,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     fetchDrawings();
   }, [boardId, clearTrigger]);
 
-  // Adjust canvas resolution for Retina/High-DPI displays
+  // Retina/High-DPI 디스플레이에 맞게 캔버스 해상도 조정
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -274,7 +274,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     return () => window.removeEventListener('resize', resizeCanvas);
   }, []);
 
-  // Listen to WebSocket messages for remote drawing events
+  // 원격 드로잉 이벤트를 위한 웹소켓 메시지 수신
   useEffect(() => {
     if (!ws) return;
 
@@ -325,7 +325,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     return () => ws.removeEventListener('message', handleMessage);
   }, [ws]);
 
-  // Utility to get coordinates relative to canvas
+  // 캔버스 기준 상대 좌표를 가져오는 유틸리티
   const getCoordinates = (e: React.MouseEvent | React.TouchEvent): Point | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
@@ -348,10 +348,10 @@ export const Canvas: React.FC<CanvasProps> = ({
     };
   };
 
-  // Local mouse / touch handlers
+  // 로컬 마우스 / 터치 이벤트 핸들러
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (tool === 'select') {
-      // Start Drag-to-Pan
+      // 화면 이동(팬) 드래그 시작
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
       isPanningRef.current = true;
@@ -387,7 +387,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (tool === 'select') {
       if (!isPanningRef.current) return;
-      // Continue Drag-to-Pan
+      // 화면 이동(팬) 드래그 계속
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
       const dx = clientX - panStartRef.current.x;

@@ -54,7 +54,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # nginx.conf 파일 전송 제거 (docker-compose.yml 단일 파일만 동기화)
       - name: Transfer config files to Oracle VM
         uses: appleboy/scp-action@v1.0.0
         with:
@@ -63,6 +62,16 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "docker-compose.yml"
           target: "/home/${{ secrets.SERVER_USER }}/drawlink"
+      
+      # 드로우링크 Nginx 설정을 메인 프록시 폴더로 직접 전송
+      - name: Transfer Nginx Config to Global Proxy
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "nginx/drawlink.conf"
+          target: "/home/${{ secrets.SERVER_USER }}/global-proxy"
 
       - name: Deploy to Oracle VM
         uses: appleboy/ssh-action@v1.2.0
