@@ -28,6 +28,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          // 🔹 현재 접속한 도메인(로컬이면 localhost, 배포면 drawlink.duckdns.org)을 동적으로 주입!
+          redirectTo: `${window.location.origin}`,
+        },
       });
       if (error) throw error;
     } catch (err: any) {
