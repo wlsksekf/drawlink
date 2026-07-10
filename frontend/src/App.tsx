@@ -121,8 +121,15 @@ export default function App() {
   // 웹소켓 설정 및 동적 연결 주소 생성
   useEffect(() => {
     let isMounted = true;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
 
     const connectWebSocket = () => {
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error('웹소켓 재연결 횟수 초과');
+        return;
+      }
+      
       setWsStatus('connecting');
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -134,15 +141,21 @@ export default function App() {
 
       socket.onopen = () => {
         if (!isMounted) return;
+        reconnectAttempts = 0; // 연결 성공 시 재시도 횟수 초기화
         setWsStatus('connected');
       };
 
       socket.onclose = () => {
         if (!isMounted) return;
         setWsStatus('disconnected');
-        reconnectTimeoutRef.current = window.setTimeout(() => {
-          connectWebSocket();
-        }, 3000);
+        reconnectAttempts++;
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          reconnectTimeoutRef.current = window.setTimeout(() => {
+            connectWebSocket();
+          }, 3000);
+        } else {
+          console.error('웹소켓 서버에 접속할 수 없습니다. (재연결 시도 중단)');
+        }
       };
 
       socket.onerror = () => {
