@@ -33,8 +33,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔹 1. 모든 엔드포인트에 /api 접두사를 강제 주입할 마스터 라우터 생성
-api_router = APIRouter(prefix="/api")
+api_router = APIRouter()
+
+app.include_router(api_router, prefix="/api")
 
 # 보드의 초기 상태를 가져오는 REST API 엔드포인트
 @api_router.get("/boards/{board_id}/drawings", response_model=List[DrawingBase])
