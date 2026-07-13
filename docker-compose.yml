@@ -1,11 +1,6 @@
-version: '3.8'
-
 services:
   backend:
     image: ${DOCKER_USERNAME:-drawlink}/${BACKEND_IMAGE:-backend}:latest
-    build:
-      context: ./backend
-      dockerfile: ./backend/Dockerfile
     container_name: drawlink-backend
     env_file:
       - .env
@@ -16,16 +11,13 @@ services:
           memory: 1024M
     networks:
       - global-network
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     restart: always
 
   frontend:
     image: ${DOCKER_USERNAME:-drawlink}/${FRONTEND_IMAGE:-frontend}:latest
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
     container_name: drawlink-frontend
     depends_on:
       - backend
