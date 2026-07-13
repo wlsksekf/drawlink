@@ -25,7 +25,7 @@ FROM nginx:alpine
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
 # 작성된 커스텀 Nginx 설정 파일을 컨테이너의 기본 설정 파일 위치에 덮어쓰기
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build-stage /app/nginx.conf /etc/nginx/conf.d/default.conf
 
 # 80번 포트 개방
 EXPOSE 80
