@@ -35,8 +35,6 @@ app.add_middleware(
 
 api_router = APIRouter()
 
-app.include_router(api_router, prefix="/api")
-
 # 보드의 초기 상태를 가져오는 REST API 엔드포인트
 @api_router.get("/boards/{board_id}/drawings", response_model=List[DrawingBase])
 async def get_drawings(board_id: str, db: AsyncSession = Depends(get_db)):
@@ -104,4 +102,4 @@ async def websocket_endpoint(
         manager.disconnect(board_id, websocket)
 
 # 🔹 2. 최종적으로 마스터 라우터를 FastAPI 앱에 한 번에 바인딩!
-app.include_router(api_router)
+app.include_router(api_router, prefix="/api")
