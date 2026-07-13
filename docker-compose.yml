@@ -23,6 +23,9 @@ services:
       - backend
     networks:
       - global-network
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     restart: always
 
 networks:
