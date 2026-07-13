@@ -5,14 +5,14 @@ FROM node:20-alpine AS build-stage
 # 작업 디렉터리 설정
 WORKDIR /app
 
-# 의존성 설치를 위한 package.json 및 package-lock.json 복사
-COPY package*.json ./
+# 컨텍스트가 루트(.)로 실행되므로 frontend 내의 package 파일들을 복사
+COPY frontend/package*.json ./
 
 # 의존성 설치
 RUN npm install
 
-# 소스 코드 복사
-COPY . .
+# 소스 코드 복사 (마찬가지로 frontend 폴더 하위 파일들을 복사)
+COPY frontend/ .
 
 # 프로덕션 빌드 실행 (Vite 기본 빌드 결과물은 dist 폴더에 생성됨)
 RUN npm run build
@@ -25,7 +25,7 @@ FROM nginx:alpine
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
 # 작성된 커스텀 Nginx 설정 파일을 컨테이너의 기본 설정 파일 위치에 덮어쓰기
-COPY --from=build-stage /app/nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # 80번 포트 개방
 EXPOSE 80
