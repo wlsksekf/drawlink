@@ -5,6 +5,9 @@ interface RoomModalProps {
   currentBoardId: string;
   onJoinRoom: (roomId: string) => void;
   onClose: () => void;
+  remoteCursors?: Record<string, { email: string }>;
+  onKickUser?: (userId: string) => void;
+  onLeaveRoom?: () => void;
 }
 
 // 재미있는 단어 조합으로 방 이름 생성
@@ -18,9 +21,9 @@ function generateRoomId(): string {
   return `${adj}-${noun}-${num}`;
 }
 
-type TabType = 'create' | 'join' | 'share';
+type TabType = 'create' | 'join' | 'share' | 'users';
 
-export function RoomModal({ currentBoardId, onJoinRoom, onClose }: RoomModalProps) {
+export function RoomModal({ currentBoardId, onJoinRoom, onClose, remoteCursors, onKickUser, onLeaveRoom }: RoomModalProps) {
   const [tab, setTab] = useState<TabType>('share');
   const [newRoomId, setNewRoomId] = useState(() => generateRoomId());
   const [joinCode, setJoinCode] = useState('');
@@ -56,6 +59,7 @@ export function RoomModal({ currentBoardId, onJoinRoom, onClose }: RoomModalProp
 
   const tabs: { key: TabType; label: string; icon: React.ReactNode }[] = [
     { key: 'share', label: '공유', icon: <Link2 size={14} /> },
+    { key: 'users', label: '참여자', icon: <Users size={14} /> },
     { key: 'create', label: '방 만들기', icon: <Users size={14} /> },
     { key: 'join', label: '참여', icon: <Hash size={14} /> },
   ];
@@ -98,9 +102,25 @@ export function RoomModal({ currentBoardId, onJoinRoom, onClose }: RoomModalProp
 
         {/* Header */}
         <div>
-          <h2 style={{ margin: '0 0 0.2rem', fontSize: '1.3rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
-            방 관리
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <h2 style={{ margin: '0 0 0.2rem', fontSize: '1.3rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
+              방 관리
+            </h2>
+            {currentBoardId !== 'lobby' && (
+              <button
+                onClick={onLeaveRoom}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#fca5a5', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem',
+                  cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
+              >
+                방 나가기
+              </button>
+            )}
+          </div>
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.82rem' }}>
             현재 방: <span style={{ color: '#a5f3fc', fontWeight: 600 }}>{currentBoardId}</span>
           </p>
@@ -225,6 +245,45 @@ export function RoomModal({ currentBoardId, onJoinRoom, onClose }: RoomModalProp
           </div>
         )}
 
+        {/* ── 참여자 탭 ──────────────────────────────────────── */}
+        {tab === 'users' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.83rem', lineHeight: 1.6 }}>
+              현재 이 방에 접속 중인 다른 사용자 목록입니다.
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {!remoteCursors || Object.keys(remoteCursors).length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.85rem' }}>
+                  다른 접속자가 없습니다.
+                </div>
+              ) : (
+                Object.entries(remoteCursors).map(([id, cursor]) => (
+                  <div key={id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: 'rgba(0,0,0,0.3)', padding: '0.6rem 1rem', borderRadius: '10px',
+                    border: '1px solid rgba(255,255,255,0.05)'
+                  }}>
+                    <span style={{ fontSize: '0.9rem', color: '#f1f5f9' }}>{cursor.email.split('@')[0]}</span>
+                    <button
+                      onClick={() => onKickUser && onKickUser(id)}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)',
+                        color: '#f87171', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem',
+                        cursor: 'pointer', transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)')}
+                    >
+                      추방
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── 방 만들기 탭 ─────────────────────────────────── */}
         {tab === 'create' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -240,7 +299,7 @@ export function RoomModal({ currentBoardId, onJoinRoom, onClose }: RoomModalProp
                 <input
                   type="text"
                   value={newRoomId}
-                  onChange={e => setNewRoomId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  onChange={e => setNewRoomId(e.target.value.toLowerCase().replace(/[^a-z0-9-가-힣]/g, ''))}
                   placeholder="방 이름 입력..."
                   className="input-field"
                   style={{ flex: 1, fontSize: '0.9rem', fontFamily: 'monospace' }}
@@ -262,7 +321,7 @@ export function RoomModal({ currentBoardId, onJoinRoom, onClose }: RoomModalProp
                 </button>
               </div>
               <p style={{ margin: '0.4rem 0 0', fontSize: '0.73rem', color: '#475569' }}>
-                영문 소문자, 숫자, 하이픈(-)만 사용 가능
+                영문 소문자, 숫자, 한글, 하이픈(-)만 사용 가능
               </p>
             </div>
 

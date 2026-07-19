@@ -175,6 +175,12 @@ export default function App() {
     const handleWSMessage = (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data);
+        if (msg.type === 'kick' && msg.data.target_id === session.id) {
+          alert('방에서 추방되었습니다.');
+          setBoardId('lobby');
+          setIsRoomModalOpen(false);
+          return;
+        }
         if (msg.type === 'cursor') {
           const { x, y, user_id, email: senderEmail } = msg.data;
           if (user_id === session.id) return; // 자신의 포인터 움직임은 무시합니다
@@ -248,7 +254,14 @@ export default function App() {
     await supabase.auth.signOut();
   };
 
-
+  const handleKickUser = (targetId: string) => {
+    if (wsRef.current && wsStatus === 'connected') {
+      wsRef.current.send(JSON.stringify({
+        type: 'kick',
+        data: { target_id: targetId }
+      }));
+    }
+  };
 
   // 로컬 마우스 이동: 변경된 좌표를 브로드캐스트
   const handleWorkspacePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -332,11 +345,11 @@ export default function App() {
       const ctx = canvas.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-    setClearTrigger((prev) => prev + 1);
 
     try {
       // 백그라운드에서 초기화 명령을 전송합니다
       await fetch(`/api/boards/${boardId}/clear`, { method: 'DELETE' });
+      setClearTrigger((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to sync board clear to server:', err);
     }
@@ -605,6 +618,12 @@ export default function App() {
           currentBoardId={boardId}
           onJoinRoom={(newRoom) => setBoardId(newRoom.toLowerCase())}
           onClose={() => setIsRoomModalOpen(false)}
+          remoteCursors={remoteCursors}
+          onKickUser={handleKickUser}
+          onLeaveRoom={() => {
+            setBoardId('lobby');
+            setIsRoomModalOpen(false);
+          }}
         />
       )}
     </div>
